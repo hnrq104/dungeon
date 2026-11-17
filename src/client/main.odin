@@ -35,9 +35,9 @@ main :: proc () {
 
 init_camera :: proc (client : ^Client) {
 	client.camera = rl.Camera3D{
-		position = {10, 10, 10},
+		position = {0, 0, 20},
 		target = {0, 0, 0},
-		up = {0, 0, 1},
+		up = {0, 1, 0},
 		fovy = 45,
 		projection = .PERSPECTIVE,
 	}
