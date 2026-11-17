@@ -12,15 +12,17 @@ MsgType :: enum MsgHeaderSize {
 }
 
 Msg :: union {
-	MsgMoveActor,
+	MsgPlayerInput,
 	MsgGameState,
 }
 
-MsgMoveActor :: struct #packed {
+MsgPlayerInput :: struct {
+	duration_msec : u16,
 	input_dir: Vec2,
+	looking: Vec3,
 }
 
-MsgGameState :: struct #packed {
+MsgGameState :: struct {
 	state: GameState,
 }
 

@@ -13,6 +13,7 @@ Server :: struct {
 	connections : map[steam.HSteamNetConnection]Connection,
 	network_tick : time.Time,
 	poll_group : steam.HSteamNetPollGroup,
+	listen_socket: steam.HSteamListenSocket
 }
 
 Connection :: struct {}
@@ -58,12 +59,14 @@ network_tick :: proc (server : ^Server) {
 }
 
 handle_msg :: proc (server : ^Server, msg : core.Msg) {
+	input_msgs := make([dynamic]core.MsgPlayerInput, context.temp_allocator)
 	switch m in msg {
-	case core.MsgMoveActor:
-		core.GameState_move_actor(&server.game_state, m.input_dir)
+	case core.MsgPlayerInput:
+		append(&input_msgs, m)
 	case core.MsgGameState:
 
 	}
+	core.state_update(&server.game_state, input_msgs[:])
 }
 
 broadcast_GameState :: proc (server : ^Server) {

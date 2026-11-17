@@ -5,9 +5,6 @@ import "base:runtime"
 import "core:c"
 import "../core"
 
-listen_socket: steam.HSteamListenSocket
-address : steam.SteamNetworkingIPAddr
-
 start_steamworks :: proc (server : ^Server) {
 	if steam.RestartAppIfNecessary(steam.uAppIdInvalid) {
         fmt.println("Launching app through steam...")
@@ -30,9 +27,10 @@ start_steamworks :: proc (server : ^Server) {
         fmt.println("USER IS LOGGED IN")
     }
 
+	address : steam.SteamNetworkingIPAddr
 	steam.NetworkingIPAddr_Clear(&address)
 	address.port = core.PORT
-	listen_socket = steam.NetworkingSockets_CreateListenSocketIP(steam.NetworkingSockets_SteamAPI(), &address, 0, nil)
+	server.listen_socket = steam.NetworkingSockets_CreateListenSocketIP(steam.NetworkingSockets_SteamAPI(), &address, 0, nil)
 
 	server.poll_group = steam.NetworkingSockets_CreatePollGroup(steam.NetworkingSockets_SteamAPI())
 }
@@ -58,8 +56,8 @@ steam_callbacks :: proc(server : ^Server) {
 			event := transmute(^steam.SteamNetConnectionStatusChangedCallback)cb.pubParam
 			#partial switch event.info.eState {
             case .Connecting:
-                if event.info.hListenSocket == listen_socket &&
-                   listen_socket != steam.HSteamListenSocket_Invalid {
+                if event.info.hListenSocket == server.listen_socket &&
+                   server.listen_socket != steam.HSteamListenSocket_Invalid {
                 	result := steam.NetworkingSockets_AcceptConnection(steam.NetworkingSockets_SteamAPI(), event.hConn)
 					if result == .OK {
 						fmt.println("Accept connection: ", result)

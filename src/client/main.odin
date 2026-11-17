@@ -5,15 +5,18 @@ import steam "../../ext/steamworks"
 import "core:c"
 import "../core"
 import "core:fmt"
+import "core:time"
 
 RES : [2]c.int : {1280, 720}
-FPS :: 60
+FPS :: 120
 
 Client :: struct {
 	game_state : core.GameState,
 	camera : rl.Camera3D,
 	server_connection : steam.HSteamNetConnection,
 	connected_to_server : bool,
+	frame_start : time.Time,
+	frame_time : time.Duration,
 }
 
 C : ^Client
@@ -22,13 +25,15 @@ main :: proc () {
 	C = new(Client); defer free(C)
 	start_steamworks(C)
 	rl.InitWindow(RES.x, RES.y, "Dungeon")
-	rl.SetTargetFPS(60)
+	rl.SetTargetFPS(FPS)
 	init_camera(C)
 	for ; !rl.WindowShouldClose() ; {
+		C.frame_start = time.now()
 		steam_callbacks(C)
 		poll_msgs(C)
-		render(C^)
 		input(C)
+		render(C^)
+		C.frame_time = time.since(C.frame_start)
 	}
 	steam.Shutdown()
 }
@@ -55,7 +60,11 @@ render :: proc (client : Client) {
 
 input :: proc (client : ^Client) {
 	dir := get_directional_input()
-	if dir != {} do send_msg(client, core.MsgMoveActor{dir})
+	frame_dt := u16(time.duration_milliseconds(client.frame_time))
+	inputs := [1]core.MsgPlayerInput{core.MsgPlayerInput{duration_msec = frame_dt, input_dir=dir}}
+	if dir != {} do send_msg(client, inputs[0])
+	// simulate
+	core.state_update(&client.game_state, inputs[:])
 }
 
 get_directional_input :: proc () -> (dir : core.Vec2){
@@ -92,7 +101,7 @@ poll_msgs :: proc (client : ^Client) {
 
 handle_msg :: proc (client : ^Client, msg : core.Msg) {
 	switch m in msg {
-	case core.MsgMoveActor:
+	case core.MsgPlayerInput:
 	case core.MsgGameState:
 		client.game_state = m.state
 	}
